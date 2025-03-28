@@ -4,6 +4,10 @@ const { google } = require('googleapis');
 const axios = require('axios');
 const router = express.Router();
 require('dotenv').config();
+const OpenAI = require("openai");
+
+const client = new OpenAI();
+
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -67,7 +71,6 @@ router.get('/redirect', async (req, res) => {
     }
 });
 
-// ChatGPT Interaction With Calendar Data
 router.post('/chat', async (req, res) => {
     const userId = 'test_user';  // Temporary userID for testing
     const { prompt } = req.body;
@@ -87,23 +90,22 @@ router.post('/chat', async (req, res) => {
     const calendarInfo = JSON.stringify(formattedEvents);
 
     try {
-        const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        const completion = await client.chat.completions.create({
             model: "gpt-4",
             messages: [
                 { role: "system", content: "You are a helpful assistant that has access to the user's calendar events." },
                 { role: "user", content: `${prompt}\n\nUser's Calendar Data: ${calendarInfo}` }
-            ]
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
-            }
+            ],
         });
 
-        const chatResponse = response.data.choices[0].message.content;
+        const chatResponse = completion.choices[0].message.content;
         res.json({ response: chatResponse });
     } catch (error) {
-        console.error('Error communicating with ChatGPT:', error.message);
+        if (error.response) {
+            console.error('Error communicating with ChatGPT:', error.response.data);
+        } else {
+            console.error('Error communicating with ChatGPT:', error.message);
+        }
         res.status(500).json({ error: 'Failed to get response from ChatGPT' });
     }
 });
