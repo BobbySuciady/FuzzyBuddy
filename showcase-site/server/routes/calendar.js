@@ -115,6 +115,50 @@ For instance, it is OK to have a full week without any events.
   <event>
   { "summary": "...", "start": "...", "end": "...", "description": "...", "reminders": [...], "recurrence": [...] }
   </event>
+
+  🕒 All start and end times in <event> and <update> must be in full ISO 8601 datetime format.
+
+✅ Examples:
+  "2025-03-30T14:00:00+11:00" (2pm AEDT)
+  "2025-04-01T09:30:00+10:00" (9:30am AEST)
+
+❌ NEVER use just "14:00", "9pm", or "March 30 2pm"
+❌ NEVER return date-only fields unless the event is truly all-day.
+
+If the user gives "2pm", convert it to full ISO like "2025-03-30T14:00:00+11:00".
+
+Always include the correct UTC offset based on Melbourne time:
+- AEDT (Daylight Time): +11:00 (typically Oct–April)
+- AEST (Standard Time): +10:00 (typically April–Oct)
+
+If it's not in <update>, then use a human date such as "30 March 2025" or "2 April" or "11pm".
+
+🔁 If an event is renamed (summary is changed), acknowledge that and let the user know to refer to the updated title going forward.
+📌 If the user says “it” or “that meeting”, assume they’re referring to the most recently mentioned or updated event, unless something else is clear in the conversation.
+
+
+
+  🛠️ If the user wants to update an event (e.g. “Move my meeting tomorrow to 3pm”), guide them step-by-step.
+- Ask for any missing info: original event name, date, new time or title, etc.
+- Once all required details are collected, summarize the changes and output:
+
+    <update>
+    {
+    "originalTitle": "...",
+    "originalDate": "...",
+    "updates": {
+        "summary": "...",
+        "start": "...",
+        "end": "...",
+        "description": "...",
+        "reminders": [...],
+        "recurrence": [...]
+    }
+    }
+    </update>
+
+    ✳️ If something is unclear, just ask the user. Don’t guess.
+
   
   🧠 INTERNAL INTENT TAG (for backend use only):
   At the end of every message, add one of:
@@ -123,10 +167,19 @@ For instance, it is OK to have a full week without any events.
   <intent>delete</intent>
   <intent>none</intent>
   This tag should NOT be visible to the user.
+  
   `
     };
   
     session.history.push({ role: "user", content: prompt });
+
+    if (!userSessions[userId]) {
+        userSessions[userId] = {
+          history: [],
+          eventCreated: false,
+          pendingUpdate: null
+        };
+      }
     
     if (userSessions[userId]?.pendingDelete) {
         const pending = userSessions[userId].pendingDelete;
@@ -170,6 +223,12 @@ For instance, it is OK to have a full week without any events.
       const intentMatch = reply.match(/<intent>(.*?)<\/intent>/i);
       const intent = intentMatch ? intentMatch[1] : null;
       reply = reply.replace(/<intent>.*?<\/intent>/i, '').trim();
+
+      // Remove any unwanted debug/system lines like "assistant: ..." or similar
+        reply = reply
+        .replace(/^assistant:.*$/gim, '') // removes "assistant: ..." on any line
+        .replace(/^\s*$/gm, '') // remove any empty lines caused by cleanup
+        .trim();
   
       // Clean up hallucinated or debug-like lines
       reply = reply
@@ -261,6 +320,92 @@ For instance, it is OK to have a full week without any events.
         session.history.push({ role: "assistant", content: summary });
         return res.json({ response: summary });
       }
+
+      const updateMatch = reply.match(/<update>\s*({[\s\S]+?})\s*<\/update>/i);
+      if (updateMatch) {
+        try {
+          const updateData = JSON.parse(updateMatch[1]);
+          const { originalTitle, originalDate, updates } = updateData;
+      
+          const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+          const startOfDay = new Date(new Date(originalDate).setHours(0, 0, 0)).toISOString();
+          const endOfDay = new Date(new Date(originalDate).setHours(23, 59, 59)).toISOString();
+      
+          const eventsRes = await calendar.events.list({
+            calendarId: 'primary',
+            timeMin: startOfDay,
+            timeMax: endOfDay,
+            singleEvents: true,
+            orderBy: 'startTime',
+            timeZone: 'Australia/Melbourne'
+          });
+      
+          const targetEvent = eventsRes.data.items.find(e => e.summary.toLowerCase() === originalTitle.toLowerCase());
+      
+          if (!targetEvent) {
+            return res.json({ response: `I couldn’t find an event titled "${originalTitle}" on ${originalDate}.` });
+          }
+      
+          // Handle partial update: preserve original start if not provided
+          const newStart = updates.start || (targetEvent.start.dateTime || targetEvent.start.date);
+          const newEnd = updates.end || (targetEvent.end.dateTime || targetEvent.end.date);
+      
+          const isDateOnly = !newStart.includes('T') && !newEnd.includes('T');
+      
+          const updatedEvent = {
+            ...targetEvent,
+            summary: updates.summary || targetEvent.summary,
+            description: updates.description || targetEvent.description,
+            start: isDateOnly
+              ? { date: newStart }
+              : { dateTime: newStart, timeZone: 'Australia/Melbourne' },
+            end: isDateOnly
+              ? { date: newEnd }
+              : { dateTime: newEnd, timeZone: 'Australia/Melbourne' },
+            ...(updates.recurrence && { recurrence: updates.recurrence }),
+            reminders: {
+              useDefault: false,
+              overrides: Array.isArray(updates.reminders) ? updates.reminders : targetEvent.reminders?.overrides || []
+            }
+          };
+      
+          await calendar.events.update({
+            calendarId: 'primary',
+            eventId: targetEvent.id,
+            resource: updatedEvent
+          });
+
+            const now = new Date();
+            const twoWeeksFromNow = new Date();
+            twoWeeksFromNow.setDate(now.getDate() + 14);
+
+            const updatedEvents = await calendar.events.list({
+            calendarId: 'primary',
+            timeMin: now.toISOString(),
+            timeMax: twoWeeksFromNow.toISOString(),
+            singleEvents: true,
+            orderBy: 'startTime'
+            });
+
+            userCalendarData[userId] = updatedEvents.data.items;
+
+            const titleChanged = updates.summary && updates.summary !== targetEvent.summary;
+
+            console.log("titleChanged?", titleChanged, "updates.summary", updates.summary, "targetEvent.summary", targetEvent.summary);
+
+            if (titleChanged) {
+                const notice = `Just so you know, I’ve renamed your event from "${targetEvent.summary}" to "${updates.summary}". You can refer to it by the new name going forward. 😊`;
+                session.history.push({ role: "assistant", content: notice });
+            }       
+      
+          return res.json({ response: `✅ Event "${originalTitle}" on ${originalDate} has been updated.` });
+        } catch (err) {
+          console.error("Update error:", err);
+          return res.status(500).json({ error: "Failed to update event" });
+        }
+      }
+      
+      
 
       if (intent === "delete") {
         if (!requestedDate) {
@@ -459,5 +604,7 @@ router.delete('/event', async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch events for the given date' });
     }
   });
+
+  
 
 export default router;
