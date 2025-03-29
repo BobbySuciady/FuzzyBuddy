@@ -1,5 +1,4 @@
-// server/routes/tasks.js
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
 let tasks = [];
@@ -25,4 +24,4 @@ router.put('/:id', (req, res) => {
     res.json({ message: 'Task completed!', tasks });
 });
 
-module.exports = router;
+export default router;

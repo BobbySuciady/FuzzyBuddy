@@ -1,8 +1,10 @@
-// server/routes/chat.js
-const express = require('express');
-const router = express.Router();
-const axios = require('axios');
+import express from 'express';
+import axios from 'axios';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+const router = express.Router();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // ChatGPT Interaction
@@ -28,4 +30,4 @@ router.post('/', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

@@ -1,5 +1,4 @@
-// server/routes/pet.js
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
 let happinessLevel = 50;  // Initial happiness level
@@ -16,4 +15,4 @@ router.post('/update-happiness', (req, res) => {
     res.json({ message: 'Happiness updated!', happinessLevel });
 });
 
-module.exports = router;
+export default router;
