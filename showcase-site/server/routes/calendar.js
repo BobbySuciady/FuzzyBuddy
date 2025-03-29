@@ -34,6 +34,13 @@ router.get('/auth', (req, res) => {
   res.redirect(authUrl);
 });
 
+// Backend Route Addition (Express)
+router.get('/auth-status', (req, res) => {
+  const userId = 'test_user';
+  res.json({ isAuthenticated: !!userTokens[userId] });
+});
+
+
 router.get('/redirect', async (req, res) => {
   const code = req.query.code;
   const userId = 'test_user';
