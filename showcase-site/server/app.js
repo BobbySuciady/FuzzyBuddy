@@ -15,6 +15,10 @@ const petRoutes = require('./routes/pet');
 const chatRoutes = require('./routes/chat');
 const calendarRoutes = require('./routes/calendar')
 
+const studyWatcherRoutes = require('./routes/studyWatcher');
+app.use('/api/study-watcher', studyWatcherRoutes);
+
+
 // Use routes
 app.use('/api/tasks', taskRoutes);
 app.use('/api/pet', petRoutes);
