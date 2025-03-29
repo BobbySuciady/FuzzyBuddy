@@ -1,9 +1,9 @@
 // server/routes/studyWatcher.js
-const express = require('express');
+import express from 'express';
+import { spawn } from 'child_process';
 const router = express.Router();
-const { spawn } = require('child_process');
-
 let pythonProcess = null;
+
 
 // Start watching
 router.post('/start-watch', (req, res) => {
@@ -35,4 +35,4 @@ router.get('/status', (req, res) => {
     res.json({ phoneDetected: req.app.locals.phoneDetected || false });
 });
 
-module.exports = router;
+export default router;
