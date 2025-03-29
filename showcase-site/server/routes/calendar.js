@@ -318,6 +318,7 @@ If it's not in <update>, then use a human date such as "30 March 2025" or "2 Apr
         }
   
         session.history.push({ role: "assistant", content: summary });
+        console.log("View summary:", summary);
         return res.json({ response: summary });
       }
 
