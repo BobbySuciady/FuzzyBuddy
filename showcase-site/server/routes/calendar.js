@@ -86,15 +86,25 @@ router.post('/chat', async (req, res) => {
       role: "system",
       content: `
   You are a smart, friendly calendar assistant who interacts naturally with users to manage their Google Calendar.
+
+  Today's date is ${today}.
+  You have access to the user's calendar data, and you can create, delete, modify or view events.
   
   🎯 Detect the user's intent:
   - If they want to **view** their schedule (e.g. “What do I have on April 2?”), retrieve and summarize events for that date.
-  - If they want to **create** an event (e.g. “Add lunch at 2”), guide them step-by-step.
+  - If they want to **create** an event (e.g. “Add event at 2”), guide them step-by-step.
+  - If they want to **delete** an event (e.g. “Remove event tomorrow”), find a matching event by name and remove it.
   
   🧠 Never ask the user “do you want to view or add?” — you decide and handle it naturally.
   
   🗓️ Always write dates in the format: “30 March 2025”.
   ❌ Never use “30th of March” or “March 30th”.
+
+❗ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
+❗ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
+❗ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
+
+For instance, it is OK to have a full week without any events.
 
   If the user gives a date without a year (e.g. “March 30”), you must assume the year is 2025 and explicitly include it in the output.
   
@@ -110,13 +120,43 @@ router.post('/chat', async (req, res) => {
   At the end of every message, add one of:
   <intent>view</intent>
   <intent>create</intent>
+  <intent>delete</intent>
   <intent>none</intent>
   This tag should NOT be visible to the user.
   `
     };
   
     session.history.push({ role: "user", content: prompt });
-  
+    
+    if (userSessions[userId]?.pendingDelete) {
+        const pending = userSessions[userId].pendingDelete;
+        const eventTitle = prompt.trim().toLowerCase();
+      
+        const match = pending.events.find(e => e.summary.toLowerCase() === eventTitle);
+      
+        if (!match) {
+          return res.json({
+            response: `I couldn’t find an event titled "${prompt}" on ${pending.date}. Could you check the name and try again?`
+          });
+        }
+      
+        try {
+          await google.calendar({ version: 'v3', auth: oAuth2Client }).events.delete({
+            calendarId: 'primary',
+            eventId: match.id
+          });
+      
+          delete userSessions[userId].pendingDelete;
+      
+          return res.json({
+            response: `🗑️ Event "${match.summary}" on ${pending.date} has been deleted.`
+          });
+        } catch (error) {
+          console.error("Deletion failed:", error);
+          return res.status(500).json({ error: "Failed to delete event." });
+        }
+    }
+
     try {
       const messages = [systemPrompt, ...session.history];
       const completion = await client.chat.completions.create({
@@ -151,7 +191,12 @@ router.post('/chat', async (req, res) => {
   
         if (lower.includes("today")) {
           requestedDate = new Date().toISOString().split("T")[0];
-        } else if (lower.includes("tomorrow")) {
+        } else if (lower.includes("yesterday")) {
+          const yesterday = new Date(); 
+          yesterday.setDate(yesterday.getDate() - 1);
+          requestedDate = yesterday.toISOString().split("T")[0];
+        }
+        else if (lower.includes("tomorrow")) {
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
           requestedDate = tomorrow.toISOString().split("T")[0];
@@ -216,8 +261,62 @@ router.post('/chat', async (req, res) => {
         session.history.push({ role: "assistant", content: summary });
         return res.json({ response: summary });
       }
+
+      if (intent === "delete") {
+        if (!requestedDate) {
+          return res.json({
+            response: "I couldn’t tell which date you're referring to. Try saying something like 'Delete my event on April 3'."
+          });
+        }
+      
+        const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+        const startOfDay = new Date(new Date(requestedDate).setHours(0, 0, 0)).toISOString();
+        const endOfDay = new Date(new Date(requestedDate).setHours(23, 59, 59)).toISOString();
+      
+        const eventsRes = await calendar.events.list({
+          calendarId: 'primary',
+          timeMin: startOfDay,
+          timeMax: endOfDay,
+          singleEvents: true,
+          orderBy: 'startTime',
+          timeZone: 'Australia/Melbourne'
+        });
+      
+        const events = eventsRes.data.items;
+      
+        if (!events.length) {
+          return res.json({ response: `You have no events on ${requestedDate}. 🎉` });
+        }
+      
+        let summary = `Here are your events on ${requestedDate}:\n`;
+        for (const e of events) {
+          if (e.start.dateTime && e.end.dateTime) {
+            const start = new Date(e.start.dateTime).toLocaleTimeString('en-AU', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            const end = new Date(e.end.dateTime).toLocaleTimeString('en-AU', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            summary += `• ${start} to ${end} — ${e.summary}\n`;
+          } else {
+            summary += `• All-day — ${e.summary}\n`;
+          }
+        }
+      
+        summary += `\nWhich one would you like me to delete? Please provide me the exact TITLE of the event in your calendar.`;
+      
+        userSessions[userId].pendingDelete = {
+          date: requestedDate,
+          events
+        };
+      
+        session.history.push({ role: "assistant", content: summary });
+        return res.json({ response: summary });
+      }
   
-      // If it's not a view request, continue with normal reply
+      // If it's not a view or delete request, continue with normal reply
       session.history.push({ role: "assistant", content: reply });
   
       const eventRegex = /<event>\s*({[\s\S]+?})\s*<\/event>/gi;
@@ -292,8 +391,6 @@ router.post('/chat', async (req, res) => {
       res.status(500).json({ error: "Something went wrong" });
     }
   });
-  
-  
 
 // Delete event route
 router.delete('/event', async (req, res) => {
@@ -342,8 +439,8 @@ router.delete('/event', async (req, res) => {
   
     try {
       const melbourneOffset = 10 * 60; // minutes (for AEDT)
-      const startOfDay = new Date(new Date(requestedDate).setHours(0, 0, 0)).toISOString();
-      const endOfDay = new Date(new Date(requestedDate).setHours(23, 59, 59)).toISOString();
+      const startOfDay = new Date(new Date(date).setHours(0, 0, 0)).toISOString();
+      const endOfDay = new Date(new Date(date).setHours(23, 59, 59)).toISOString();
         
   
       const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
