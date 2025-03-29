@@ -59,7 +59,15 @@ npm i
 pip install opencv-python opencv-python-headless opencv-contrib-python
 ```
 
-### 2. Run server
+### 2. Create .env in showcase-site/server
+```bash
+GOOGLE_CLIENT_ID= YOUR GOOGLE CLIENT ID
+GOOGLE_CLIENT_SECRET= YOUR GOOGLE CLIENT SECRET
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/calendar/redirect
+OPENAI_API_KEY= YOUR OPENAI API KEY
+```
+
+### 4. Run server
 at /showcase-site
 ```bash
 npm run dev
