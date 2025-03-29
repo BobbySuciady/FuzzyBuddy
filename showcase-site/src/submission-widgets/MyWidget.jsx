@@ -17,6 +17,12 @@ const MyWidget = () => {
     const [isEditingTime, setIsEditingTime] = useState(false);
     const [inputMinutes, setInputMinutes] = useState(0);
     const [inputSeconds, setInputSeconds] = useState(0);
+    const [happiness, setHappiness] = useState(0); // Ranges from 0 to 100
+
+    const increaseHappiness = () => {
+        setHappiness(prev => Math.min(prev + 20, 100)); // cap at 100
+    };
+    
 
 
     useEffect(() => {
@@ -306,13 +312,24 @@ const MyWidget = () => {
         </div>
     </div>
                 )}
+{/* Happiness Meter */}
+<div className="w-full mt-2">
+    <div className="text-[10px] font-bold mb-1 text-purple-700">Pet Happiness</div>
+    <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+        <div 
+            className="h-full bg-yellow-400 transition-all duration-300"
+            style={{ width: `${happiness}%` }}
+        ></div>
+    </div>
+</div>
 
 
             </div>
     
             {/* Sidebar  */}
             <div style={{ width: '25%' }}>
-                <Sidebar isAuthenticated={isAuthenticated} />
+            <Sidebar isAuthenticated={isAuthenticated} onTodoComplete={increaseHappiness} />
+
             </div>
         </div>
     );

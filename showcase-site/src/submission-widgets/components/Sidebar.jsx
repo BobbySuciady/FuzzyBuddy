@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
-const Sidebar = ({ isAuthenticated }) => {
+const Sidebar = ({ isAuthenticated, onTodoComplete }) => {
+
   const [todos, setTodos] = useState([]);
   const [events, setEvents] = useState([]);
   const [checkedTodos, setCheckedTodos] = useState({});
@@ -45,11 +46,21 @@ const Sidebar = ({ isAuthenticated }) => {
   };
 
   const toggleCheckbox = (index) => {
-    setCheckedTodos(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
+    setCheckedTodos(prev => {
+      const isChecked = !prev[index];
+      if (isChecked) {
+        // Remove from todos and trigger happiness increase
+        setTodos(prevTodos => {
+          const updated = [...prevTodos];
+          updated.splice(index, 1);
+          return updated;
+        });
+        onTodoComplete?.();
+      }
+      return { ...prev, [index]: isChecked };
+    });
   };
+  
 
   useEffect(() => {
     const fetchCalendar = async () => {
