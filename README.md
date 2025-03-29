@@ -59,7 +59,7 @@ npm i
 pip install opencv-python opencv-python-headless opencv-contrib-python
 ```
 
-### 2. Create .env in showcase-site/server
+### 3. Create .env in showcase-site/server
 ```bash
 GOOGLE_CLIENT_ID= YOUR GOOGLE CLIENT ID
 GOOGLE_CLIENT_SECRET= YOUR GOOGLE CLIENT SECRET
