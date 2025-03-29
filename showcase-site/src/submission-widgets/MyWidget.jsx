@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import PetBounce from './MyAssets/PetBounce.gif';
 import PetStare from './MyAssets/PetStare.gif'
-
+import PetLove from './MyAssets/PetLove.gif';
 
 import StudyWatcher from './components/StudyWatcher';
 import Sidebar from './components/Sidebar';
@@ -18,10 +18,20 @@ const MyWidget = () => {
     const [inputMinutes, setInputMinutes] = useState(0);
     const [inputSeconds, setInputSeconds] = useState(0);
     const [happiness, setHappiness] = useState(0); // Ranges from 0 to 100
+    const [petImage, setPetImage] = useState(PetBounce);
+
 
     const increaseHappiness = () => {
-        setHappiness(prev => Math.min(prev + 20, 100)); // cap at 100
+        setHappiness(prev => {
+            const newHappiness = Math.min(prev + 20, 100);
+            if (newHappiness !== prev) {
+                setPetImage(PetLove);
+                setTimeout(() => setPetImage(PetBounce), 1000); // revert after 1 sec
+            }
+            return newHappiness;
+        });
     };
+    
     
 
 
@@ -155,7 +165,7 @@ const MyWidget = () => {
                             {/* Pet Image */}
                             <div className="flex-shrink-0">
                                 <img 
-                                    src={PetBounce} 
+                                    src={petImage}
                                     alt="pet gif" 
                                     style={{ width: '150px', height: '150px' }}
                                 />
