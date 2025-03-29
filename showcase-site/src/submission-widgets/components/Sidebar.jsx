@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const Sidebar = ({ isAuthenticated, onTodoComplete }) => {
 
@@ -48,6 +49,24 @@ const Sidebar = ({ isAuthenticated, onTodoComplete }) => {
   const toggleCheckbox = (index) => {
     setCheckedTodos(prev => {
       const updatedChecked = { ...prev, [index]: true };
+
+      const todoToDelete = todos[index];
+
+      // Send cute delete message to chat API
+      const sendDeletePrompt = async () => {
+        try {
+          const message1 = `Heya cutie~! Can you pwease dewete the event cawwed \"${todoToDelete.title}\" fwom 30 March 2025, nya~? ✨💖`;
+          const message2 = `${todoToDelete.title}`;
+
+          await axios.post('http://localhost:5000/api/calendar/chat', { prompt: message1 });
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          await axios.post('http://localhost:5000/api/calendar/chat', { prompt: message2 });
+        } catch (err) {
+          console.error('Failed to send delete message:', err);
+        }
+      };
+
+      sendDeletePrompt();
   
       // Wait 0.5s, then remove todo and untick
       setTimeout(() => {
