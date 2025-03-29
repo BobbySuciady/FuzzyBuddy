@@ -112,7 +112,7 @@ const MyWidget = () => {
                         >
                             Ask Pet
                         </button>
-                        <div>Response: {response}</div>
+                        <div className="text-xs">Response: {response}</div>
                     </div>
                 )}
     

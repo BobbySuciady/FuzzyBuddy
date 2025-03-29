@@ -2,7 +2,6 @@
 import cv2
 import sys
 import json
-import numpy as np
 
 def detect_phone():
     # Initialize the webcam feed
