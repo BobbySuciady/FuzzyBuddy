@@ -46,7 +46,7 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/BobbySuciady/fuzzybuddy.git
+git clone https://github.com/BobbySuciady/FuzzyBuddy.git
 cd showcase-site
 ```
 
