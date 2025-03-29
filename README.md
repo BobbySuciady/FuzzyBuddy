@@ -10,7 +10,7 @@ It **connects with your Google Calendar**, helps you **manage your daily tasks w
 
 ### 📅 Talk to Your Calendar Naturally - Cawendaw tawkies
 FuzzyBuddy can:
-- 🧠 Understand **natural language questions** like:
+- 🧠 Understand **natural language questions with the power of AI** like:
   - “What do I have to do today?”
   - “What events do I have tomorrow?”
 - ✅ **Create new events** directly from chat
