@@ -1,34 +1,12 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-import StudyWatcher from './components/StudyWatcher';
-
 const MyWidget = () => {
     const [message, setMessage] = useState('');
     const [response, setResponse] = useState('');
-    const [isWatching, setIsWatching] = useState(false);
 
     const authenticateUser = () => {
         window.location.href = 'http://localhost:5000/api/calendar/auth';
-    };
-    
-
-    const startWatch = async () => {
-        try {
-            await axios.post('http://localhost:5000/api/study-watcher/start-watch');
-            setIsWatching(true);
-        } catch (error) {
-            console.error('Error starting study mode:', error.message);
-        }
-    };
-
-    const stopWatch = async () => {
-        try {
-            await axios.post('http://localhost:5000/api/study-watcher/stop-watch');
-            setIsWatching(false);
-        } catch (error) {
-            console.error('Error stopping study mode:', error.message);
-        }
     };
 
     const handleChat = async () => {
@@ -59,11 +37,6 @@ const MyWidget = () => {
                 <button onClick={handleChat}>Ask Pet</button>
                 <div>Response: {response}</div>
             </div>
-            {isWatching ? (
-                <StudyWatcher onStop={stopWatch} />
-            ) : (
-                <button onClick={startWatch} className="p-2 bg-green-500 text-white rounded">Start Study Mode</button>
-            )}
         </div>
     );
 };
