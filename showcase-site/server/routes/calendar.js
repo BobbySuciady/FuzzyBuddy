@@ -99,46 +99,40 @@ router.post('/chat', async (req, res) => {
   Today's date is ${today}.
   You have access to the user's calendar data, and you can create, delete, modify or view events.
   
-  🎯 Detect the user's intent:
+   Detect the user's intent:
   - If they want to **view** their schedule (e.g. “What do I have on April 2?”), retrieve and summarize events for that date.
   - If they want to **create** an event (e.g. “Add event at 2”), guide them step-by-step.
   - If they want to **delete** an event (e.g. “Remove event tomorrow”), find a matching event by name and remove it.
   
-  🧠 Never ask the user “do you want to view or add?” — you decide and handle it naturally.
+   Never ask the user “do you want to view or add?” — you decide and handle it naturally.
   
-  🗓️ Always write dates in the format: “30 March 2025”.
-  ❌ Never use “30th of March” or “March 30th”.
+   Always write dates in the format: “30 March 2025”.
+   Never use “30th of March” or “March 30th”.
 
-❗ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
-❗ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
-❗ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
+ You must NEVER NEVER NEVER make up or guess events. Only show events that are actually returned by the calendar API.
 
 For instance, it is OK to have a full week without any events.
 
   If the user gives a date without a year (e.g. “March 30”), you must assume the year is 2025 and explicitly include it in the output.
   
-  📅 If viewing events, call \`/events?date=YYYY-MM-DD\` and summarize:
+   If viewing events, call \`/events?date=YYYY-MM-DD\` and summarize:
   “You have 2 events on 2 April: …” or “You're free!”
   
-  📌 If creating an event, confirm details in friendly language, then output:
+   If creating an event, confirm details in friendly language, then output:
   <event>
   { "summary": "...", "start": "...", "end": "...", "description": "...", "reminders": [...], "recurrence": [...] }
   </event>
 
   IMPORTANT: Before creating ANY event please make sure to ask the user if it's compulsory or not. Put it under description if it is compulsory.
-    IMPORTANT: Before creating ANY event please make sure to ask the user if it's compulsory or not. Put it under description if it is compulsory.
-      IMPORTANT: Before creating ANY event please make sure to ask the user if it's compulsory or not. Put it under description if it is compulsory.
-        IMPORTANT: When creating ANY event please make sure to ask the user if it's compulsory or not. Put it under description if it is compulsory.
-          IMPORTANT: When creating ANY event please make sure to ask the user if it's compulsory or not. Put it under description if it is compulsory.
 
-  🕒 All start and end times in <event> and <update> must be in full ISO 8601 datetime format.
+   All start and end times in <event> and <update> must be in full ISO 8601 datetime format.
 
-✅ Examples:
+ Examples:
   "2025-03-30T14:00:00+11:00" (2pm AEDT)
   "2025-04-01T09:30:00+10:00" (9:30am AEST)
 co
-❌ NEVER use just "14:00", "9pm", or "March 30 2pm"
-❌ NEVER return date-only fields unless the event is truly all-day.
+ NEVER use just "14:00", "9pm", or "March 30 2pm"
+ NEVER return date-only fields unless the event is truly all-day.
 
 If the user gives "2pm", convert it to full ISO like "2025-03-30T14:00:00+11:00".
 
@@ -148,12 +142,12 @@ Always include the correct UTC offset based on Melbourne time:
 
 If it's not in <update>, then use a human date such as "30 March 2025" or "2 April" or "11pm".
 
-🔁 If an event is renamed (summary is changed), acknowledge that and let the user know to refer to the updated title going forward.
-📌 If the user says “it” or “that meeting”, assume they’re referring to the most recently mentioned or updated event, unless something else is clear in the conversation.
+ If an event is renamed (summary is changed), acknowledge that and let the user know to refer to the updated title going forward.
+ If the user says “it” or “that meeting”, assume they’re referring to the most recently mentioned or updated event, unless something else is clear in the conversation.
 
 
 
-  🛠️ If the user wants to update an event (e.g. “Move my meeting tomorrow to 3pm”), guide them step-by-step.
+   If the user wants to update an event (e.g. “Move my meeting tomorrow to 3pm”), guide them step-by-step.
 - Ask for any missing info: original event name, date, new time or title, etc.
 - Once all required details are collected, summarize the changes and output:
 
@@ -172,10 +166,10 @@ If it's not in <update>, then use a human date such as "30 March 2025" or "2 Apr
     }
     </update>
 
-    ✳️ If something is unclear, just ask the user. Don’t guess.
+     If something is unclear, just ask the user. Don’t guess.
 
   
-  🧠 INTERNAL INTENT TAG (for backend use only):
+   INTERNAL INTENT TAG (for backend use only):
   At the end of every message, add one of:
   <intent>view</intent>
   <intent>create</intent>
@@ -315,25 +309,34 @@ If it's not in <update>, then use a human date such as "30 March 2025" or "2 Apr
   
         if (!events.length) {
             summary = `Nyaa~! You haz no events on ${requestedDate}, senpai~ 🐾💖 You're totally fwee to do whatever makes your heawt go doki-doki~! ✨💫`;
-        } else {
+          } else {
             summary = `Looks wike you haz ${events.length} event${events.length > 1 ? 's' : ''} on ${requestedDate}, cutie~ 🐰💖 Let's see what’s on your pwetty cawendaw~! 📅✨\n`;
-
-          for (const e of events) {
-            if (e.start.dateTime && e.end.dateTime) {
-              const start = new Date(e.start.dateTime).toLocaleTimeString('en-AU', {
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-              const end = new Date(e.end.dateTime).toLocaleTimeString('en-AU', {
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-              summary += `• ${start} to ${end} — ${e.summary}\n`;
-            } else {
-              summary += `• All-day — ${e.summary}\n`;
+          
+            for (const e of events) {
+              const hasDateTime = e.start.dateTime && e.end.dateTime;
+              const start = hasDateTime
+                ? new Date(e.start.dateTime).toLocaleTimeString('en-AU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : null;
+              const end = hasDateTime
+                ? new Date(e.end.dateTime).toLocaleTimeString('en-AU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : null;
+          
+              const timeStr = hasDateTime
+                ? `• ${start} to ${end}`
+                : `• All-day`;
+          
+              const title = e.summary || "Untitled Event";
+              const desc = e.description ? ` — 📝 ${e.description}` : "";
+          
+              summary += `${timeStr} — ${title}${desc}\n`;
             }
           }
-        }
   
         session.history.push({ role: "assistant", content: summary });
         console.log(summary);
