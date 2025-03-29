@@ -65,160 +65,302 @@ router.get('/redirect', async (req, res) => {
 });
 
 router.post('/chat', async (req, res) => {
-  const userId = 'test_user';
-  const { prompt } = req.body;
-
-  if (!userCalendarData[userId]) {
-    return res.status(404).json({ error: 'No calendar data found for this user.' });
-  }
-
-  if (!userSessions[userId]) {
-    userSessions[userId] = {
-      history: [],
-      eventCreated: false
-    };
-  }
-
-  const session = userSessions[userId];
-  const today = new Date().toISOString().split("T")[0];
-
-  const systemPrompt = {
-    role: "system",
-    content: `
-You are a smart, friendly calendar assistant. You help users create events in their Google Calendar by having a natural conversation.
-
-Today’s date is ${today}. Use this as a reference when interpreting natural language like “today,” “tomorrow,” or “next Monday.”
-
-You should infer as much as you can from the user’s prompt, especially the event name and description.
-- If the event name seems obvious, use it (e.g. “study session with friends at 8pm”).
-- If a description is implied or can be written from context, write it.
-- Only ask for a detail if it is clearly missing or truly ambiguous.
-
-Only ask ONE question at a time. No lists. Never overwhelm the user.
-
-Gather these details step-by-step:
-- Event name
-- Start and end time (natural language OK)
-- Description (include whether it's Priority: Compulsory or Optional)
-- Reminder (ask: popup/email/both, and how many minutes before)
-- Recurrence (ask: does it repeat daily, weekly, etc.)
-
-✅ Never show technical data (like JSON, ISO strings, timestamps) to the user.
-
-✅ When all event info is collected:
-1. Confirm the event in friendly, human words.
-2. Then output only this special tag block so the backend can create it:
-
-<event>
-{
-  "summary": "Example Event",
-  "start": "2025-04-01T21:00:00",
-  "end": "2025-04-01T22:00:00",
-  "description": "Something important. Priority: Compulsory",
-  "reminders": [
-    { "method": "email", "minutes": 30 },
-    { "method": "popup", "minutes": 15 }
-  ],
-  "recurrence": ["RRULE:FREQ=WEEKLY"]
-}
-</event>
-
-❌ Never say “here is the JSON” or anything like that.
-
-If the user says “cancel” or “never mind”, stop everything.`
-  };
-
-  session.history.push({ role: "user", content: prompt });
-
-  try {
-    const messages = [systemPrompt, ...session.history];
-
-    const completion = await client.chat.completions.create({
-      model: "gpt-4",
-      messages
-    });
-
-    const reply = completion.choices[0].message.content;
-    console.log("GPT reply:", reply);
-
-    session.history.push({ role: "assistant", content: reply });
-
-    const eventRegex = /<event>\s*({[\s\S]+?})\s*<\/event>/gi;
-    const matches = reply.matchAll(eventRegex);
-    const events = [];
-
-    for (const match of matches) {
-      try {
-        const eventObj = JSON.parse(match[1]);
-        events.push(eventObj);
-      } catch (err) {
-        console.error("Failed to parse one event block");
-      }
+    const userId = 'test_user';
+    const { prompt } = req.body;
+  
+    if (!userCalendarData[userId]) {
+      return res.status(404).json({ error: 'No calendar data found for this user.' });
     }
-
-    if (!events.length) {
-      return res.json({ response: reply });
-    }
-
-    const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-    const responses = [];
-
-    for (const parsedEvent of events) {
-      const isCompulsory = parsedEvent.description?.toLowerCase().includes("priority: compulsory");
-      const eventStart = new Date(parsedEvent.start);
-
-      const existingCompulsories = userCalendarData[userId]
-        .filter(e => (e.description || "").toLowerCase().includes("priority: compulsory"))
-        .map(e => new Date(e.start.dateTime || e.start.date))
-        .filter(date => date >= new Date())
-        .sort((a, b) => a - b);
-
-      const isSoonest = !existingCompulsories.length || eventStart <= existingCompulsories[0];
-
-      const isDateOnly = !parsedEvent.start.includes('T');
-
-      const start = isDateOnly
-        ? { date: parsedEvent.start }
-        : { dateTime: parsedEvent.start, timeZone: 'Australia/Melbourne' };
-
-      const end = isDateOnly
-        ? { date: parsedEvent.end }
-        : { dateTime: parsedEvent.end, timeZone: 'Australia/Melbourne' };
-
-      const newEvent = {
-        summary: parsedEvent.summary,
-        description: parsedEvent.description || "",
-        start,
-        end,
-        colorId: isCompulsory ? (isSoonest ? "11" : "4") : "9",
-        reminders: {
-          useDefault: false,
-          overrides: Array.isArray(parsedEvent.reminders) ? parsedEvent.reminders : []
-        },
-        ...(parsedEvent.recurrence && { recurrence: parsedEvent.recurrence })
+  
+    if (!userSessions[userId]) {
+      userSessions[userId] = {
+        history: [],
+        eventCreated: false
       };
-
-      const inserted = await calendar.events.insert({
-        calendarId: 'primary',
-        resource: newEvent
-      });
-
-      responses.push(`✅ Event "${parsedEvent.summary}" has been created.`);
     }
+  
+    const session = userSessions[userId];
+    const today = new Date().toISOString().split("T")[0];
+  
+    const systemPrompt = {
+      role: "system",
+      content: `
+  You are a smart, friendly calendar assistant who interacts naturally with users to manage their Google Calendar.
+  
+  🎯 Detect the user's intent:
+  - If they want to **view** their schedule (e.g. “What do I have on April 2?”), retrieve and summarize events for that date.
+  - If they want to **create** an event (e.g. “Add lunch at 2”), guide them step-by-step.
+  
+  🧠 Never ask the user “do you want to view or add?” — you decide and handle it naturally.
+  
+  🗓️ Always write dates in the format: “30 March 2025”.
+  ❌ Never use “30th of March” or “March 30th”.
 
-    // Keep session going to allow continuation (e.g. follow-up for next event)
-    session.eventCreated = true;
+  If the user gives a date without a year (e.g. “March 30”), you must assume the year is 2025 and explicitly include it in the output.
+  
+  📅 If viewing events, call \`/events?date=YYYY-MM-DD\` and summarize:
+  “You have 2 events on 2 April: …” or “You're free!”
+  
+  📌 If creating an event, confirm details in friendly language, then output:
+  <event>
+  { "summary": "...", "start": "...", "end": "...", "description": "...", "reminders": [...], "recurrence": [...] }
+  </event>
+  
+  🧠 INTERNAL INTENT TAG (for backend use only):
+  At the end of every message, add one of:
+  <intent>view</intent>
+  <intent>create</intent>
+  <intent>none</intent>
+  This tag should NOT be visible to the user.
+  `
+    };
+  
+    session.history.push({ role: "user", content: prompt });
+  
+    try {
+      const messages = [systemPrompt, ...session.history];
+      const completion = await client.chat.completions.create({
+        model: "gpt-4",
+        messages
+      });
+  
+      let reply = completion.choices[0].message.content;
+      console.log("GPT reply original:", reply);
+  
+      const intentMatch = reply.match(/<intent>(.*?)<\/intent>/i);
+      const intent = intentMatch ? intentMatch[1] : null;
+      reply = reply.replace(/<intent>.*?<\/intent>/i, '').trim();
+  
+      // Clean up hallucinated or debug-like lines
+      reply = reply
+        .replace(/Let me check.*?\n?/gi, '')
+        .replace(/\(.*?retrieves.*?\)\n?/gi, '')
+        .replace(/^\d{4}-\d{2}-\d{2}$/gm, '')
+        .trim();
+  
+      console.log("GPT reply clean:", reply);
+  
+      let requestedDate = null;
+  
+      // Extract date from known format
+      const explicitDate = reply.match(/\/events\?date=(\d{4}-\d{2}-\d{2})/i);
+      if (explicitDate) {
+        requestedDate = explicitDate[1];
+      } else {
+        const lower = reply.toLowerCase();
+  
+        if (lower.includes("today")) {
+          requestedDate = new Date().toISOString().split("T")[0];
+        } else if (lower.includes("tomorrow")) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          requestedDate = tomorrow.toISOString().split("T")[0];
+        } else {
+          // Match formats like "30 March 2025"
+          const fullDateMatch = reply.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/i);
+          if (fullDateMatch) {
+            const day = parseInt(fullDateMatch[1]);
+            const monthName = fullDateMatch[2];
+            const year = parseInt(fullDateMatch[3]);
+            const monthIndex = new Date(`${monthName} 1`).getMonth();
+  
+            if (!isNaN(day) && !isNaN(monthIndex) && !isNaN(year)) {
+                // It's bugged lol so pls dont erase (day + 1) it will break the program...
+              requestedDate = new Date(year, monthIndex, day + 1).toISOString().split("T")[0];
+            }
+          }
+        }
+      }
+  
+      console.log("Intent:", intent, "Requested date:", requestedDate);
+  
+      if (intent === "view" && requestedDate) {
+        const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+  
+        const startOfDay = new Date(new Date(requestedDate).setHours(0, 0, 0)).toISOString();
+        const endOfDay = new Date(new Date(requestedDate).setHours(23, 59, 59)).toISOString();
+  
+        const eventsRes = await calendar.events.list({
+          calendarId: 'primary',
+          timeMin: startOfDay,
+          timeMax: endOfDay,
+          singleEvents: true,
+          orderBy: 'startTime',
+          timeZone: 'Australia/Melbourne'
+        });
+  
+        const events = eventsRes.data.items;
+        let summary;
+  
+        if (!events.length) {
+          summary = `You have no events on ${requestedDate}. Enjoy your free time! 🎉`;
+        } else {
+          summary = `You have ${events.length} event${events.length > 1 ? 's' : ''} on ${requestedDate}:\n`;
+          for (const e of events) {
+            if (e.start.dateTime && e.end.dateTime) {
+              const start = new Date(e.start.dateTime).toLocaleTimeString('en-AU', {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              const end = new Date(e.end.dateTime).toLocaleTimeString('en-AU', {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              summary += `• ${start} to ${end} — ${e.summary}\n`;
+            } else {
+              summary += `• All-day — ${e.summary}\n`;
+            }
+          }
+        }
+  
+        session.history.push({ role: "assistant", content: summary });
+        return res.json({ response: summary });
+      }
+  
+      // If it's not a view request, continue with normal reply
+      session.history.push({ role: "assistant", content: reply });
+  
+      const eventRegex = /<event>\s*({[\s\S]+?})\s*<\/event>/gi;
+      const matches = reply.matchAll(eventRegex);
+      const events = [];
+  
+      for (const match of matches) {
+        try {
+          const eventObj = JSON.parse(match[1]);
+          events.push(eventObj);
+        } catch (err) {
+          console.error("Failed to parse event:", err);
+        }
+      }
+  
+      if (!events.length) {
+        return res.json({ response: reply });
+      }
+  
+      const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+      const responses = [];
+  
+      for (const parsedEvent of events) {
+        const isCompulsory = parsedEvent.description?.toLowerCase().includes("priority: compulsory");
+        const eventStart = new Date(parsedEvent.start);
+  
+        const existingCompulsories = userCalendarData[userId]
+          .filter(e => (e.description || "").toLowerCase().includes("priority: compulsory"))
+          .map(e => new Date(e.start.dateTime || e.start.date))
+          .filter(date => date >= new Date())
+          .sort((a, b) => a - b);
+  
+        const isSoonest = !existingCompulsories.length || eventStart <= existingCompulsories[0];
+        const isDateOnly = !parsedEvent.start.includes('T');
+  
+        const start = isDateOnly
+          ? { date: parsedEvent.start }
+          : { dateTime: parsedEvent.start, timeZone: 'Australia/Melbourne' };
+  
+        const end = isDateOnly
+          ? { date: parsedEvent.end }
+          : { dateTime: parsedEvent.end, timeZone: 'Australia/Melbourne' };
+  
+        const newEvent = {
+          summary: parsedEvent.summary,
+          description: parsedEvent.description || "",
+          start,
+          end,
+          colorId: isCompulsory ? (isSoonest ? "11" : "4") : "9",
+          reminders: {
+            useDefault: false,
+            overrides: Array.isArray(parsedEvent.reminders) ? parsedEvent.reminders : []
+          },
+          ...(parsedEvent.recurrence && { recurrence: parsedEvent.recurrence })
+        };
+  
+        await calendar.events.insert({
+          calendarId: 'primary',
+          resource: newEvent
+        });
+  
+        responses.push(`✅ Event "${parsedEvent.summary}" has been created.`);
+      }
+  
+      session.eventCreated = true;
+      return res.json({
+        response: `${responses.join('\n')}\n\nIs there anything else you’d like me to do?`
+      });
+  
+    } catch (error) {
+      console.error("GPT error:", error.response?.data || error.message);
+      res.status(500).json({ error: "Something went wrong" });
+    }
+  });
+  
+  
 
-    return res.json({
-      response: `${responses.join('\n')}\n\nWhat would you like to add next?`
-    });
-
-  } catch (error) {
-    console.error("GPT error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Something went wrong" });
-  }
-});
-
-
+// Delete event route
+router.delete('/event', async (req, res) => {
+    const userId = 'test_user';
+    const { summary } = req.body;
+  
+    if (!userCalendarData[userId]) {
+      return res.status(404).json({ error: 'No calendar data found for this user.' });
+    }
+  
+    const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+  
+    try {
+      const eventToDelete = userCalendarData[userId].find(event =>
+        event.summary.toLowerCase() === summary.toLowerCase()
+      );
+  
+      if (!eventToDelete) {
+        return res.status(404).json({ error: `No event found with name: ${summary}` });
+      }
+  
+      await calendar.events.delete({
+        calendarId: 'primary',
+        eventId: eventToDelete.id
+      });
+  
+      return res.json({ response: `🗑️ Event "${summary}" has been deleted.` });
+    } catch (error) {
+      console.error("Delete error:", error.response?.data || error.message);
+      res.status(500).json({ error: 'Failed to delete event' });
+    }
+  });
+  
+  // Get events for a specific day
+  router.get('/events', async (req, res) => {
+    const userId = 'test_user';
+    const { date } = req.query; // expecting YYYY-MM-DD
+  
+    if (!userCalendarData[userId]) {
+      return res.status(404).json({ error: 'No calendar data found for this user.' });
+    }
+  
+    if (!date) {
+      return res.status(400).json({ error: 'Please provide a date in YYYY-MM-DD format.' });
+    }
+  
+    try {
+      const melbourneOffset = 10 * 60; // minutes (for AEDT)
+      const startOfDay = new Date(new Date(requestedDate).setHours(0, 0, 0)).toISOString();
+      const endOfDay = new Date(new Date(requestedDate).setHours(23, 59, 59)).toISOString();
+        
+  
+      const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+      const eventsRes = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startOfDay,
+        timeMax: endOfDay,
+        singleEvents: true,
+        orderBy: 'startTime',
+        timeZone: 'Australia/Melbourne'
+      });
+  
+      return res.json({ events: eventsRes.data.items });
+    } catch (error) {
+      console.error("Get events error:", error.response?.data || error.message);
+      res.status(500).json({ error: 'Failed to fetch events for the given date' });
+    }
+  });
 
 export default router;
