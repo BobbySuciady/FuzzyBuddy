@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
-const Sidebar = ({ isAuthenticated }) => {
+const Sidebar = ({ isAuthenticated, onTodoComplete }) => {
+
   const [todos, setTodos] = useState([]);
   const [events, setEvents] = useState([]);
   const [checkedTodos, setCheckedTodos] = useState({});
@@ -45,11 +46,30 @@ const Sidebar = ({ isAuthenticated }) => {
   };
 
   const toggleCheckbox = (index) => {
-    setCheckedTodos(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
+    setCheckedTodos(prev => {
+      const updatedChecked = { ...prev, [index]: true };
+  
+      // Wait 0.5s, then remove todo and untick
+      setTimeout(() => {
+        setTodos(prevTodos => {
+          const updated = [...prevTodos];
+          updated.splice(index, 1);
+          return updated;
+        });
+  
+        setCheckedTodos(prevChecked => {
+          const resetChecked = { ...prevChecked };
+          delete resetChecked[index]; // Or set to false if you prefer
+          return resetChecked;
+        });
+  
+        onTodoComplete?.();
+      }, 1000);
+  
+      return updatedChecked;
+    });
   };
+  
 
   useEffect(() => {
     const fetchCalendar = async () => {
@@ -83,44 +103,59 @@ const Sidebar = ({ isAuthenticated }) => {
         </button>
       )}
 
-        <h2 className="text-yellow-300 text-lg font-bold mb-2">To-dos</h2>
-            {todos.slice(0, 3).map((todo, idx) => (
-            <div key={idx} className="flex items-center justify-between text-sm mb-1">
-                <div className="flex flex-col">
-                <span>{todo.title}</span>
-                <span className="text-xs text-yellow-200">{todo.time}</span>
-                </div>
-                <input
-                type="checkbox"
-                className="accent-yellow-400 cursor-pointer"
-                checked={checkedTodos[idx] || false}
-                onChange={() => toggleCheckbox(idx)}
-                />
+      {isAuthenticated && (
+        <>
+<h2 className="text-yellow-300 text-lg font-bold">To-dos</h2>
+
+          {todos.length === 0 && (
+            <div className="text-sm italic text-yellow-200 opacity-80">
+              No to-dos for today~ ✨
             </div>
-            ))}
-            {Array(Math.max(0, 3 - todos.length)).fill(null).map((_, i) => (
-            <div key={`empty-todo-${i}`} className="flex items-center justify-between text-sm mb-1 opacity-50">
-                <div className="flex flex-col">
-                <span>—</span>
-                <span className="text-xs text-yellow-200">—</span>
-                </div>
-                <input type="checkbox" disabled className="accent-yellow-400" />
+          )}
+
+        {todos.slice(0, 3).map((todo, idx) => (
+          <div key={idx} className="grid grid-cols-[1fr_auto] items-center w-full text-sm mb-1">
+            <div className="pr-2 overflow-hidden">
+              <span className="block truncate">{todo.title}</span>
             </div>
+            <input
+              type="checkbox"
+              className="accent-yellow-400 cursor-pointer justify-self-end"
+              checked={checkedTodos[idx] || false}
+              onChange={() => toggleCheckbox(idx)}
+            />
+          </div>
         ))}
 
-      <h2 className="text-yellow-300 text-lg font-bold mt-6 mb-2">Events later</h2>
-      {events.slice(0, 3).map((event, idx) => (
-        <div key={idx} className="mb-4 border-b border-yellow-300 pb-1">
-          <div className="font-bold text-sm">{event.title}</div>
-          <div className="text-sm">{event.time}</div>
-        </div>
-      ))}
-      {Array(Math.max(0, 3 - events.length)).fill(null).map((_, i) => (
-        <div key={`empty-event-${i}`} className="mb-4 border-b border-yellow-300 pb-1 opacity-50">
-          <div className="font-bold text-sm">—</div>
-          <div className="text-sm">—</div>
-        </div>
-      ))}
+        {todos.length > 3 && (
+          <div className="text-xs text-yellow-100 italic">
+            + {todos.length - 3} more…
+          </div>
+        )}
+
+
+          <h2 className="text-yellow-300 text-lg font-bold mt-3">Events later</h2>
+
+          {events.length === 0 && (
+            <div className="text-sm italic text-yellow-200 opacity-80">
+              No events for today~ 🎉
+            </div>
+          )}
+
+          {events.slice(0, 3).map((event, idx) => (
+            <div key={idx} className="mb-2 border-b border-yellow-300 pb-1">
+              <div className="font-bold text-sm truncate overflow-hidden whitespace-nowrap">{event.title}</div>
+              <div className="text-xs truncate overflow-hidden whitespace-nowrap">{event.time}</div>
+            </div>
+          ))}
+
+          {events.length > 3 && (
+            <div className="text-xs text-yellow-100 italic">+ {events.length - 3} more…</div>
+          )}
+        </>
+      )}
+
+
     </div>
   );
 };
