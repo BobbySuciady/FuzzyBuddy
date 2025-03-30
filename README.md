@@ -4,7 +4,7 @@ Hewwo fwiend! FuzzyBuddy is youw adowabowl pwoductivity paw that wives on youw s
 
 It **connects with your Google Calendar**, helps you **manage your daily tasks with natural language**, and ensures you are focused while you study by **making sure you’re not messing with your phone** 👀📱
 
-GIF PRODUCT DEMO BELOW!
+###GIF PRODUCT DEMO BELOW HOW IT WORKS! (TAKES A WHILE TO LOAD)
 
 ---
 
@@ -57,6 +57,10 @@ Update Events in your Google Calendary Easily
 
 Delete cancelled events in Google Calendar
 ![DELETEEVENT-3](https://github.com/user-attachments/assets/290da95f-39ee-4475-9057-e5c78f5f6ff1)
+
+Feed FuzzyBuddy with completed tasks to keep it happy!
+![HAPPY-1](https://github.com/user-attachments/assets/af8fd5ff-b110-44f0-9483-52075549dba4)
+
 
 Study with FuzzyBuddy, keeping out for your phone
 ![PHONEDETECT-2](https://github.com/user-attachments/assets/00ae64f8-74b7-4a15-92b6-636f833df892)
