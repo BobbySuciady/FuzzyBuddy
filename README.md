@@ -46,10 +46,10 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
 ---
 
 ## GIF PRODUCT DEMO (TAKES A WHILE TO LOAD)
-Find events in your calendar through natural language!
+Talk with your Google Calendar with the power of AI!
 ![GETEVENT](https://github.com/user-attachments/assets/ff44b102-5b8d-4cc9-aa29-85eab4425621)
 
-Add Events to your google calendar through normal chat!
+Add Events to your google calendar through normal chat, simple and fast!
 ![ADDEVENT](https://github.com/user-attachments/assets/512d3403-8d30-46d7-b940-f581482a03bb)
 
 Update Events in your Google Calendary Easily
@@ -61,8 +61,7 @@ Delete cancelled events in Google Calendar
 Feed FuzzyBuddy with completed tasks to keep it happy!
 ![HAPPY-1](https://github.com/user-attachments/assets/af8fd5ff-b110-44f0-9483-52075549dba4)
 
-
-Study with FuzzyBuddy, keeping out for your phone
+Study with FuzzyBuddy, has a phone detection system that will yell at you if it sees you playing on your phone!
 ![PHONEDETECT-2](https://github.com/user-attachments/assets/00ae64f8-74b7-4a15-92b6-636f833df892)
 
 
