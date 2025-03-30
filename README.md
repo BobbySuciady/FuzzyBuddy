@@ -46,22 +46,22 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
 ---
 
 ## GIF PRODUCT DEMO (TAKES A WHILE TO LOAD)
-Talk with your Google Calendar with the power of AI!
+**Talk with your Google Calendar with the power of AI!**
 ![GETEVENT](https://github.com/user-attachments/assets/ff44b102-5b8d-4cc9-aa29-85eab4425621)
 
-Add Events to your google calendar through normal chat, simple and fast!
+**Add Events to your google calendar through normal chat, simple and fast!**
 ![ADDEVENT](https://github.com/user-attachments/assets/512d3403-8d30-46d7-b940-f581482a03bb)
 
-Update Events in your Google Calendary Easily
+**Update Events in your Google Calendary Easily**
 ![UPDATEVENT](https://github.com/user-attachments/assets/0c97a45e-f613-4f2f-99ed-95d3eb8b7dfb)
 
-Delete cancelled events in Google Calendar
+**Delete cancelled events in Google Calendar**
 ![DELETEEVENT-3](https://github.com/user-attachments/assets/290da95f-39ee-4475-9057-e5c78f5f6ff1)
 
-Feed FuzzyBuddy with completed tasks to keep it happy!
+**Feed FuzzyBuddy with completed tasks to keep it happy!**
 ![HAPPY-1](https://github.com/user-attachments/assets/af8fd5ff-b110-44f0-9483-52075549dba4)
 
-Study with FuzzyBuddy, has a phone detection system that will yell at you if it sees you playing on your phone!
+**Webcam can detect your phone and will yell at you using speakers if you procrastinating!**
 ![PHONEDETECT-2](https://github.com/user-attachments/assets/00ae64f8-74b7-4a15-92b6-636f833df892)
 
 
