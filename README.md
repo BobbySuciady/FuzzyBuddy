@@ -4,6 +4,8 @@ Hewwo fwiend! FuzzyBuddy is youw adowabowl pwoductivity paw that wives on youw s
 
 It **connects with your Google Calendar**, helps you **manage your daily tasks with natural language**, and ensures you are focused while you study by **making sure you’re not messing with your phone** 👀📱
 
+GIF PRODUCT DEMO BELOW!
+
 ---
 
 ## ✨ Featuwes
@@ -43,7 +45,7 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
 
 ---
 
-## GIF PRODUCT DEMO
+## GIF PRODUCT DEMO (TAKES A WHILE TO LOAD)
 Find events in your calendar through natural language!
 ![GETEVENT](https://github.com/user-attachments/assets/ff44b102-5b8d-4cc9-aa29-85eab4425621)
 
