@@ -32,6 +32,7 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
     _"HEY! Are you scrolling right now?!"_
 ---
 
+
 ## 🧠 How It Wowks
 
 - 🐥 **Fwontrend:** React + Tailwind CSS
@@ -41,6 +42,24 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
 - 🕵️ **Phone Snooping:** Python + OpenCV (vawwid use I pwomise!!)
 
 ---
+Find events in your calendar through natural language!
+![GETEVENT](https://github.com/user-attachments/assets/ff44b102-5b8d-4cc9-aa29-85eab4425621)
+
+Add Events to your google calendar through normal chat!
+![ADDEVENT](https://github.com/user-attachments/assets/512d3403-8d30-46d7-b940-f581482a03bb)
+
+Update Events in your Google Calendary Easily
+![UPDATEVENT](https://github.com/user-attachments/assets/0c97a45e-f613-4f2f-99ed-95d3eb8b7dfb)
+
+Delete cancelled events in Google Calendar
+![DELETEEVENT-3](https://github.com/user-attachments/assets/290da95f-39ee-4475-9057-e5c78f5f6ff1)
+
+Study with FuzzyBuddy, keeping out for your phone
+![PHONEDETECT-2](https://github.com/user-attachments/assets/00ae64f8-74b7-4a15-92b6-636f833df892)
+
+
+
+
 
 ## 🚀 Getting Started
 
