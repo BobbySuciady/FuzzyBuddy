@@ -42,6 +42,8 @@ Switch to **STUDY** mode and youw buddy gets sewious about youw focus! >:3
 - 🕵️ **Phone Snooping:** Python + OpenCV (vawwid use I pwomise!!)
 
 ---
+
+## GIF PRODUCT DEMO
 Find events in your calendar through natural language!
 ![GETEVENT](https://github.com/user-attachments/assets/ff44b102-5b8d-4cc9-aa29-85eab4425621)
 
