@@ -1,5 +1,7 @@
 # 🧸 FuzzyBuddy - Youw AI Cawendaw Compawnion & Study Buddy! (≧◡≦)
 
+## 🏆 Runner Up of HackMelbourne's Hackiethon 2025 in "Most Innovative" AND "Most Useful"🏆
+
 Hewwo fwiend! FuzzyBuddy is youw adowabowl pwoductivity paw that wives on youw scween wike a wittwe Tamagotchi — but it does **wayyy mowe than just bouncy bouncy~** 💻💖
 
 It **connects with your Google Calendar**, helps you **manage your daily tasks with natural language**, and ensures you are focused while you study by **making sure you’re not messing with your phone** 👀📱
